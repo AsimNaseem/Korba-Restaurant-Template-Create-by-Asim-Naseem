@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, X, Send, Mic, MicOff, Volume2, VolumeX, Bot } from 'lucide-react';
+import { MessageSquare, X, Send, Bot } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { MENU_DATA } from '../data/menu';
 
@@ -31,48 +31,7 @@ export const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Speech Recognition
-  const recognition = useRef<any>(null);
-  useEffect(() => {
-    if (typeof window !== 'undefined' && ('WebkitSpeechRecognition' in window || 'speechRecognition' in window)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognition.current = new SpeechRecognition();
-      recognition.current.continuous = false;
-      recognition.current.interimResults = false;
-      recognition.current.lang = 'en-US';
-
-      recognition.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-      };
-
-      recognition.current.onerror = () => setIsListening(false);
-      recognition.current.onend = () => setIsListening(false);
-    }
-  }, []);
-
-  const toggleListening = () => {
-    if (isListening) {
-      recognition.current?.stop();
-    } else {
-      recognition.current?.start();
-      setIsListening(true);
-    }
-  };
-
-  const speak = (text: string) => {
-    if (!isSpeaking || typeof window === 'undefined') return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
-  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -96,7 +55,6 @@ export const Chatbot = () => {
       const botText = response.text || "I'm sorry, I couldn't process that.";
       
       setMessages(prev => [...prev, { role: 'model', text: botText }]);
-      speak(botText);
     } catch (error) {
       console.error("Chatbot Error:", error);
       setMessages(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);
@@ -134,12 +92,6 @@ export const Chatbot = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => setIsSpeaking(!isSpeaking)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  {isSpeaking ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                </button>
-                <button 
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
@@ -176,14 +128,6 @@ export const Chatbot = () => {
 
             {/* Input */}
             <div className="p-4 bg-white border-t border-zinc-100 flex items-center gap-2">
-              <button 
-                onClick={toggleListening}
-                className={`p-3 rounded-xl transition-all ${
-                  isListening ? 'bg-red-50 text-red-500 animate-pulse' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
-                }`}
-              >
-                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-              </button>
               <input 
                 type="text"
                 value={input}
